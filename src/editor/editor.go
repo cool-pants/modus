@@ -1,7 +1,6 @@
 package editor
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/cool-pants/modus/src/ui"
@@ -9,11 +8,13 @@ import (
 
 type Editor struct {
 	term *ui.TermState
+	buf  *ui.DoubleBuffer
 }
 
 func InitEditor(term *ui.TermState) *Editor {
 	editor := &Editor{
 		term: term,
+		buf:  ui.NewDoubleBuf(),
 	}
 	editor.drawEditor()
 	return editor
@@ -21,7 +22,8 @@ func InitEditor(term *ui.TermState) *Editor {
 
 func (e *Editor) Start() {
 	for {
-		e.drawEditor()
+		e.buf.Sync()
+		e.buf.WriteToWriter(os.Stdout)
 		e.processKeyPress()
 	}
 }
@@ -47,27 +49,42 @@ func (e *Editor) processKeyPress() {
 	case CTRLKey('q'):
 		e.term.Close()
 		break
+	default:
+		if !isCtrl(inp) {
+			e.buf.WriteToBuf(string(inp))
+		}
+		break
 	}
 }
 
 func (e *Editor) drawEditor() {
-	// Clear Screen
-	fmt.Fprint(os.Stdin, "\x1b[2J")
+	// Hide Cursor
+	e.buf.WriteToBuf("\x1b[?25l")
+
+	// // Clear Screen
+	// e.buf.WriteToBuf("\x1b[2J")
 
 	// Move Cursor to top left
-	fmt.Fprint(os.Stdin, "\x1b[H")
+	e.buf.WriteToBuf("\x1b[1;1H")
 
 	e.drawCols()
 
 	// Move Cursor to top left
-	fmt.Fprint(os.Stdin, "\x1b[H")
+	e.buf.WriteToBuf("\x1b[1;3H")
+
+	// UnHide Cursor
+	e.buf.WriteToBuf("\x1b[?25h")
+
+	e.buf.Sync()
+	e.buf.WriteToWriter(os.Stdout)
 }
 
 func (e *Editor) drawCols() {
 	for y := 0; y < e.term.Cols; y++ {
-		fmt.Fprint(os.Stdout, "~")
+		e.buf.WriteToBuf("~")
+		e.buf.WriteToBuf("\x1b[K")
 		if y < e.term.Cols-1 {
-			fmt.Fprint(os.Stdout, "\r\n")
+			e.buf.WriteToBuf("\r\n")
 		}
 	}
 }
