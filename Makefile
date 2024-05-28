@@ -7,7 +7,6 @@ run: build
 	./${BINARY_NAME}
 
 clean:
-	rm ${BINARY_NAME}
 	go clean
 
 .PHONY: build run clean
