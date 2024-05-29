@@ -50,7 +50,7 @@ func (t *TermState) getCursorPos() int {
 	if buf[0] != byte('\x1b') || buf[1] != '[' {
 		return -1
 	}
-	_, err = fmt.Fscanf(bytes.NewReader(buf[2:]), "%d;%d", &t.Rows, &t.Cols)
+	_, err = fmt.Fscanf(bytes.NewReader(buf[2:]), "%d;%d", &t.Cols, &t.Rows)
 	utils.Assert(err == nil, fmt.Sprintf("Failed to parse buffer with %v", err), t)
 	fmt.Fprintf(os.Stdout, "\r\n%d: %d\r\n", t.Rows, t.Cols)
 	read()
