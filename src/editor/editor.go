@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/cool-pants/modus/src/ui"
@@ -9,6 +10,8 @@ import (
 type Editor struct {
 	term *ui.TermState
 	buf  *ui.DoubleBuffer
+
+	cx, cy int
 }
 
 func InitEditor(term *ui.TermState) *Editor {
@@ -21,10 +24,11 @@ func InitEditor(term *ui.TermState) *Editor {
 }
 
 func (e *Editor) Start() {
+	modeManager := NewModeManager(e)
 	for {
 		e.buf.Sync()
 		e.buf.WriteToWriter(os.Stdout)
-		e.processKeyPress()
+		modeManager.processKeyPress()
 	}
 }
 
@@ -40,23 +44,6 @@ func isCtrl(c []byte) bool {
 	return true
 }
 
-func (e *Editor) processKeyPress() {
-	inp := make([]byte, 1)
-
-	os.Stdin.Read(inp)
-
-	switch inp[0] {
-	case CTRLKey('q'):
-		e.term.Close()
-		break
-	default:
-		if !isCtrl(inp) {
-			e.buf.WriteToBuf(string(inp))
-		}
-		break
-	}
-}
-
 func (e *Editor) drawEditor() {
 	// Hide Cursor
 	e.buf.WriteToBuf("\x1b[?25l")
@@ -70,7 +57,7 @@ func (e *Editor) drawEditor() {
 	e.drawCols()
 
 	// Move Cursor to top left
-	e.buf.WriteToBuf("\x1b[1;3H")
+	e.buf.WriteToBuf(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
 
 	// UnHide Cursor
 	e.buf.WriteToBuf("\x1b[?25h")
@@ -84,7 +71,7 @@ func (e *Editor) drawCols() {
 		e.buf.WriteToBuf("~")
 		e.buf.WriteToBuf("\x1b[K")
 		if y < e.term.Cols-1 {
-			e.buf.WriteToBuf("\r\n")
+			e.buf.WriteToBuf("~\x1b[K\r\n")
 		}
 	}
 }
