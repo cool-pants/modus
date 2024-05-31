@@ -1,10 +1,16 @@
 package editor
 
+type NormalModeHandler interface {
+	NavHandler
+	Closable
+}
+
 type NormalMode struct {
 	Name        string
 	Identifier  rune
-	bufChan     chan string
-	termHandler NavHandler
+	Write       Writer
+	termHandler NormalModeHandler
+	modeHandler ModeHandler
 }
 
 func (n *NormalMode) getModeName() string {
@@ -24,6 +30,9 @@ func (n *NormalMode) processKeyPress(key []byte) {
 		break
 	case 'h':
 		n.termHandler.moveLeft(1)
+		break
+	case 'i':
+		n.modeHandler.switchMode(INSERT_MODE)
 		break
 	case CTRLKey('q'):
 		n.termHandler.close()

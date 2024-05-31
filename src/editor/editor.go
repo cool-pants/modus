@@ -13,14 +13,6 @@ var (
 	inp = make([]byte, 1)
 )
 
-type NavHandler interface {
-	moveUp(y int)
-	moveDown(y int)
-	moveRight(x int)
-	moveLeft(x int)
-	close()
-}
-
 type Editor struct {
 	term *ui.TermState
 	buf  *buffer.DoubleBuffer
@@ -32,26 +24,24 @@ type Editor struct {
 
 func (e *Editor) moveUp(y int) {
 	e.cy = max(0, e.cy-1)
-	e.writeStatusLine(true)
-	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
-	e.buf.Write("\x1b[?25h")
+	e.renderEssentials()
 }
 
 func (e *Editor) moveDown(y int) {
 	e.cy = min(e.term.Cols-3, e.cy+1)
-	e.writeStatusLine(true)
-	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
-	e.buf.Write("\x1b[?25h")
+	e.renderEssentials()
 }
 func (e *Editor) moveLeft(x int) {
 	e.cx = max(3, e.cx-1)
-	e.writeStatusLine(true)
-	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
-	e.buf.Write("\x1b[?25h")
+	e.renderEssentials()
 }
 
 func (e *Editor) moveRight(x int) {
 	e.cx = min(e.term.Rows-1, e.cx+1)
+	e.renderEssentials()
+}
+
+func (e *Editor) renderEssentials() {
 	e.writeStatusLine(true)
 	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
 	e.buf.Write("\x1b[?25h")
