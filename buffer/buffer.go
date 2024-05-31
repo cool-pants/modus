@@ -4,6 +4,24 @@ import (
 	"bytes"
 )
 
+type AppendBuffer struct {
+	buf        []*bytes.Buffer
+	rows, cols uint
+}
+
+// AppendBuffer will always append to the buffer, meaning
+// In case a character is present in x,y the buf moves the
+// char to the right and appends the new char in the position
+func (abuf *AppendBuffer) append(row, col int, byteData []byte) {
+	bufBytes := abuf.buf[row].Bytes()
+	newArr := make([]byte, len(bufBytes)+len(byteData))
+	newArr = append(newArr, bufBytes[:col]...)
+	newArr = append(newArr, byteData...)
+	newArr = append(newArr, bufBytes[col:]...)
+	abuf.buf[row].Truncate(0)
+	abuf.buf[row].ReadFrom(bytes.NewReader(newArr))
+}
+
 type DoubleBuffer struct {
 	readBuf   *bytes.Buffer
 	writeBuf  *bytes.Buffer

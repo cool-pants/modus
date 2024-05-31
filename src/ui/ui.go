@@ -52,7 +52,7 @@ func (t *TermState) getCursorPos() int {
 	}
 	_, err = fmt.Fscanf(bytes.NewReader(buf[2:]), "%d;%d", &t.Cols, &t.Rows)
 	utils.Assert(err == nil, fmt.Sprintf("Failed to parse buffer with %v", err), t)
-	fmt.Fprintf(os.Stdout, "\r\n%d: %d\r\n", t.Rows, t.Cols)
+	fmt.Fprintf(os.Stdout, "\r\nRows %d: Cols %d\r\n", t.Rows, t.Cols)
 	read()
 
 	return 0
