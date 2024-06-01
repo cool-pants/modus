@@ -43,8 +43,8 @@ func (e *Editor) moveRight(x int) {
 
 func (e *Editor) renderEssentials() {
 	e.writeStatusLine(true)
-	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
-	e.buf.Write("\x1b[?25h")
+	e.buf.Write(0, e.cy, fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
+	e.buf.Write(0, e.cy, "\x1b[?25h")
 }
 
 func (e *Editor) close() {
@@ -52,7 +52,7 @@ func (e *Editor) close() {
 }
 
 func InitEditor(term *ui.TermState) *Editor {
-	doubleBuffer := buffer.NewDoubleBuffer()
+	doubleBuffer := buffer.NewDoubleBuffer(uint(term.Rows), uint(term.Cols))
 	editor := &Editor{
 		term: term,
 		buf:  doubleBuffer,
@@ -87,21 +87,21 @@ func isCtrl(c []byte) bool {
 
 func (e *Editor) drawEditor() {
 	// Hide Cursor
-	e.buf.Write("\x1b[?25l")
+	// e.buf.Write("\x1b[?25l")
 
 	// // Clear Screen
 	// e.buf.WriteToBuf("\x1b[2J")
 
 	// Move Cursor to top left
-	e.buf.Write("\x1b[1;1H")
+	// e.buf.Write("\x1b[1;1H")
 
 	e.drawCols()
 
 	// Move Cursor to top left
-	e.buf.Write(fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
+	fmt.Fprint(os.Stdout, fmt.Sprintf("\x1b[%d;%dH", e.cy+1, e.cx+1))
 
 	// UnHide Cursor
-	e.buf.Write("\x1b[?25h")
+	// e.buf.Write("\x1b[?25h")
 
 	fmt.Fprint(os.Stdout, e.buf.Read())
 }
@@ -109,22 +109,22 @@ func (e *Editor) drawEditor() {
 func (e *Editor) drawCols() {
 	for y := 0; y < e.term.Cols-1; y++ {
 		if y < e.term.Cols-2 {
-			e.buf.Write("~")
+			e.buf.Write(0, y, "~")
 		}
-		e.buf.Write("\x1b[K\r\n")
+		e.buf.Write(1, y, "\x1b[K\r\n")
 	}
 	e.writeStatusLine(false)
 }
 
 func (e *Editor) writeStatusLine(hideCursor bool) {
-	if hideCursor {
-		e.buf.Write("\x1b[?25l")
-	}
-	e.buf.Write(fmt.Sprintf("\x1b[%d;0H", e.term.Rows))
-	modeName := fmt.Sprintf("----%s----", e.mode.getModeName())
-	position := fmt.Sprintf("%d: %d", e.cx+1, e.cy+1)
-	e.buf.Write(e.spaceBetween(modeName, position))
-	e.buf.Write("\x1b[K")
+	// if hideCursor {
+	// 	e.buf.Write("\x1b[?25l")
+	// }
+	// e.buf.Write(fmt.Sprintf("\x1b[%d;0H", e.term.Rows))
+	// modeName := fmt.Sprintf("----%s----", e.mode.getModeName())
+	// position := fmt.Sprintf("%d: %d", e.cx+1, e.cy+1)
+	// e.buf.Write(e.spaceBetween(modeName, position))
+	// e.buf.Write("\x1b[K")
 }
 
 func (e *Editor) spaceBetween(s1 string, s2 string) string {

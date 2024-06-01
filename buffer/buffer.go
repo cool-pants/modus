@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"bytes"
+	"strings"
 )
 
 type AppendBuffer struct {
@@ -22,31 +23,69 @@ func (abuf *AppendBuffer) append(row, col int, byteData []byte) {
 	abuf.buf[row].ReadFrom(bytes.NewReader(newArr))
 }
 
+func (abuf *AppendBuffer) replace(row, col int, byteData []byte) {
+	bufBytes := abuf.buf[row].Bytes()
+	newArr := make([]byte, len(bufBytes)+len(byteData))
+	newArr = append(newArr, bufBytes[:col-1]...)
+	newArr = append(newArr, byteData...)
+	newArr = append(newArr, bufBytes[col+1:]...)
+	abuf.buf[row].Truncate(0)
+	abuf.buf[row].ReadFrom(bytes.NewReader(newArr))
+}
+
+func (abuf *AppendBuffer) getString() string {
+	arr := make([]string, abuf.rows)
+	for _, buf := range abuf.buf {
+		arr = append(arr, buf.String())
+	}
+	return strings.Join(arr, "\r\n")
+}
+
 type DoubleBuffer struct {
-	readBuf   *bytes.Buffer
-	writeBuf  *bytes.Buffer
+	readBuf   *AppendBuffer
+	writeBuf  *AppendBuffer
 	WriteChan chan string
 	Close     chan struct{}
 }
 
-func NewDoubleBuffer() *DoubleBuffer {
+func createBufArr(size int) []*bytes.Buffer {
+	buf := make([]*bytes.Buffer, size)
+
+	for i := 0; i < size; i++ {
+		buf[i] = bytes.NewBuffer(make([]byte, 0))
+	}
+
+	return buf
+}
+
+func NewDoubleBuffer(rows, cols uint) *DoubleBuffer {
 	buf := &DoubleBuffer{
 		WriteChan: make(chan string),
-		readBuf:   bytes.NewBuffer(make([]byte, 0)),
-		writeBuf:  bytes.NewBuffer(make([]byte, 0)),
-		Close:     make(chan struct{}),
+		readBuf: &AppendBuffer{
+			buf:  createBufArr(int(rows)),
+			rows: rows,
+			cols: cols,
+		},
+		writeBuf: &AppendBuffer{
+			buf:  createBufArr(int(rows)),
+			rows: rows,
+			cols: cols,
+		},
+		Close: make(chan struct{}),
 	}
 	return buf
 }
 
-func (buf *DoubleBuffer) Write(data string) {
-	buf.writeBuf.WriteString(data)
+func (buf *DoubleBuffer) Write(x, y int, data string) {
+	buf.writeBuf.append(x, y, []byte(data))
 }
 
 func (buf *DoubleBuffer) Read() string {
 	// Sync Bufs
-	buf.readBuf.Truncate(0)
-	buf.readBuf.ReadFrom(bytes.NewReader(buf.writeBuf.Bytes()))
+	for i := range buf.writeBuf.buf {
+		buf.readBuf.buf[i].Truncate(0)
+		buf.readBuf.buf[i].ReadFrom(bytes.NewReader(buf.writeBuf.buf[i].Bytes()))
+	}
 
-	return buf.readBuf.String()
+	return buf.readBuf.getString()
 }

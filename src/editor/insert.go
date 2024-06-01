@@ -1,10 +1,15 @@
 package editor
 
+type TermHandler interface {
+	Closable
+	Sizable
+}
+
 type InsertMode struct {
 	Name        string
 	Identifier  rune
 	Writer      Writer
-	termHandler Closable
+	termHandler TermHandler
 }
 
 func (n *InsertMode) getModeName() string {
@@ -13,7 +18,7 @@ func (n *InsertMode) getModeName() string {
 
 func (n *InsertMode) processKeyPress(key []byte) {
 	if !isCtrl(key) {
-		n.Writer.Write(string(key))
+		n.Writer.Write(n.termHandler.getCurY(), n.termHandler.getCurX(), string(key))
 	}
 	switch key[0] {
 	case CTRLKey('q'):

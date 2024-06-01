@@ -10,13 +10,17 @@ type NavHandler interface {
 type Closable interface {
 	close()
 }
+type Sizable interface {
+	getCurX() int
+	getCurY() int
+}
 
 type ModeHandler interface {
 	switchMode(rune)
 }
 
 type Writer interface {
-	Write(string)
+	Write(row, col int, data string)
 }
 
 type EditorMode interface {
@@ -40,6 +44,15 @@ func (m *ModeManager) close() {
 	m.editor.mode = m.ActiveMode
 	m.editor.renderEssentials()
 }
+
+func (m *ModeManager) getCurX() int {
+	return m.editor.cx
+}
+
+func (m *ModeManager) getCurY() int {
+	return m.editor.cy
+}
+
 func (m *ModeManager) switchMode(c rune) {
 	m.ActiveMode = m.SupportedModes[c]
 	m.editor.mode = m.ActiveMode
